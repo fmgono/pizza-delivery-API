@@ -1,3 +1,3 @@
-## Todo List App
-Simple App created with React JS
+## Pizza Delivery API
+Simple API created with  Node Js without npm & framework
 
