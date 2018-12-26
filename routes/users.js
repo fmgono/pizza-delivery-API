@@ -47,7 +47,7 @@ const baseRoutes = (data,callback) => listMethods.includes(data.method) ? routes
 
 const routes = {};
 
-// Employee - post
+// Users - post
 // Required data : fullName,email,phone,streetAddress,password
 // Optional data : none
 routes.post = function(data, callback) {
@@ -67,7 +67,7 @@ routes.post = function(data, callback) {
 
     // Check all required fields are filled out.
     if (!isPassedFields) {
-        callback(400, {Error: 'Missing required fields.'});
+        callback(400, {message: 'Missing required fields.'});
     } else {
         // Check the user does not exists.
         _data.read('users',email, (err, usersData) => {
@@ -90,7 +90,7 @@ routes.post = function(data, callback) {
     }
 };
 
-// Employee - get
+// Users - get
 // Required field : email
 // Optional field : none
 routes.get = function(data, callback) {
@@ -111,7 +111,7 @@ routes.get = function(data, callback) {
     }
 };
 
-// Employee - put
+// Users - put
 // Required field : email
 // Optional field : fullName,phone,streetAddress
 routes.put = function(data, callback) {
@@ -131,7 +131,7 @@ routes.put = function(data, callback) {
     // Lookup the user.
     _data.read('users',email, (err,userData) => {
         // Update the necessary field.
-        if (err) callback(400, {message: 'The employee does not exists'});
+        if (err) callback(400, {message: 'The User does not exists'});
         
         // Update userData Object.
         fullName ? userData.fullName = fullName : null;
@@ -145,7 +145,7 @@ routes.put = function(data, callback) {
     });
 };
 
-// Employee - delete
+// Users - delete
 // Required field : email
 // Optional field : none
 routes.delete = function(data, callback) {
@@ -154,9 +154,9 @@ routes.delete = function(data, callback) {
     if (!email) {
         callback(404, {message: 'The user does not exists'});
     } else {
-        // Lookup the employee data.
+        // Lookup the Users data.
         _data.read('users',email, (err) => {
-            if (err) callback(400, {Error: 'The employee does not exists'});
+            if (err) callback(400, {Error: 'The User does not exists'});
             deleteFile('users', email)
             .then(results => callback(results.statusCode, results.result))
             .catch(error => callback(error.statusCode, error.result));
