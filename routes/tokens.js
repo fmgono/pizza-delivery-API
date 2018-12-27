@@ -108,7 +108,7 @@ routes.get = function(data, callback) {
 // Required data : tokenId
 // Optional data : none
 routes.put = function(data, callback) {
-    const {tokenId, extend} = data.payload;
+    let {tokenId, extend} = data.payload;
     tokenId = tokenId ? tokenId.trim() : '';
     extend = extend ? extend : false;
 
@@ -118,8 +118,12 @@ routes.put = function(data, callback) {
     readFile('tokens', tokenId)
     .then(results => {
         // Check token is expired or not
-        if (results.data.expires < Date.now()) callback(400, {message: `The token has already expired and cannot be extended`});
-        results.data.expires = Date.now() + 1000 * 60 * 60;
+        if (results.result.expires < Date.now()) callback(400, {message: `The token has already expired and cannot be extended`});
+        results.expires = Date.now() + 1000 * 60 * 60;
+        _data.update('tokens', tokenId, results.result, (err, message) => {
+            if (err) callback(500, {message: `Could not update the token`});
+            callback(200, {message: `Token has successfully updated`});
+        });
     })
     .catch(error => callback(error.statusCode, error.result));
 };
