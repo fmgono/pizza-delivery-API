@@ -97,9 +97,7 @@ routes.get = function(data, callback) {
     if (!tokenId) callback(400, {message: `Missing required field`});
 
     readFile('tokens', tokenId)
-    .then(results => {
-        callback(results.statusCode, results.result);
-    })
+    .then(results => callback(results.statusCode, results.result))
     .catch(error => callback(error.statusCode, error.result));
     
 };
@@ -112,14 +110,14 @@ routes.put = function(data, callback) {
     tokenId = tokenId ? tokenId.trim() : '';
     extend = extend ? extend : false;
 
-    if (!tokenId && !extend) callback(400, {message: `Missing required fields`});
+    if (!tokenId || !extend) callback(400, {message: `Missing required fields`});
 
     // Lookup for the token
     readFile('tokens', tokenId)
     .then(results => {
         // Check token is expired or not
         if (results.result.expires < Date.now()) callback(400, {message: `The token has already expired and cannot be extended`});
-        results.expires = Date.now() + 1000 * 60 * 60;
+        results.result.expires = Date.now() + 1000 * 60 * 60;
         _data.update('tokens', tokenId, results.result, (err, message) => {
             if (err) callback(500, {message: `Could not update the token`});
             callback(200, {message: `Token has successfully updated`});
@@ -128,5 +126,19 @@ routes.put = function(data, callback) {
     .catch(error => callback(error.statusCode, error.result));
 };
 
+// Tokens - delete
+// Required field : tokenId
+// Optional field : none
+routes.delete = function(data, callback) {
+    const tokenId = data.query.tokenId ? data.query.tokenId.trim() : '';
+    if (!tokenId) callback(400, {message: `Missing required fields`});
+    // Lookup the Users data.
+    _data.read('tokens',tokenId, (err) => {
+        if (err) callback(400, {message: 'The Token does not exists'});
+        deleteFile('tokens', tokenId)
+        .then(results => callback(results.statusCode, results.result))
+        .catch(error => callback(error.statusCode, error.result));
+    });
+};
 
 module.exports = baseRoutes;
