@@ -66,28 +66,19 @@ routes.post = function(data, callback) {
     const isPassedFields = Object.values(filteredFields).every(isPassed => isPassed);
 
     // Check all required fields are filled out.
-    if (!isPassedFields) {
-        callback(400, {message: 'Missing required fields.'});
-    } else {
-        // Check the user does not exists.
-        _data.read('users',email, (err, usersData) => {
-            if (usersData) {
-                callback(500, {message: `Email with the address ${email} already registered`});
-            } else {
-                // Hash the password.
-                const hashedPassword = helpers.hash(password);
-                if (!hashedPassword) {
-                    callback(500, {message: `Could not hash the user's password`});
-                } else {
-                    filteredFields.password = hashedPassword;
-                    createFile('users', email, filteredFields)
-                    .then(result => callback(result.statusCode, result.result))
-                    .catch(error => callback(error.statusCode, error.message));
-                }
+    if (!isPassedFields) callback(400, {message: 'Missing required fields.'});
 
-            }
-        });
-    }
+    // Check the user does not exists.
+    _data.read('users',email, (err, usersData) => {
+        if (usersData) callback(500, {message: `Email with the address ${email} already registered`});
+        // Hash the password.
+        const hashedPassword = helpers.hash(password);
+        if (!hashedPassword) callback(500, {message: `Could not hash the user's password`});
+        filteredFields.password = hashedPassword;
+        createFile('users', email, filteredFields)
+        .then(result => callback(result.statusCode, result.result))
+        .catch(error => callback(error.statusCode, error.message));
+    });
 };
 
 // Users - get
@@ -97,18 +88,16 @@ routes.get = function(data, callback) {
     // Check the required field.
     const email = data.query.email.trim() || false;
 
-    if (!email) {
-        callback(400, {Error: 'Missing required field'});
-    } else {
-        // Consuming promise
-        readFile('users',email)
-        .then(results => {
-            // Remove the password fields when returning it to the requester.
-            delete results.result.password;
-            callback(results.statusCode, results.result);
-        })
-        .catch(error => callback(error.statusCode, error.result));
-    }
+    if (!email) callback(400, {message: 'Missing required field'});
+
+    // Consuming promise
+    readFile('users',email)
+    .then(results => {
+        // Remove the password fields when returning it to the requester.
+        delete results.result.password;
+        callback(results.statusCode, results.result);
+    })
+    .catch(error => callback(error.statusCode, error.result));
 };
 
 // Users - put
@@ -151,17 +140,14 @@ routes.put = function(data, callback) {
 routes.delete = function(data, callback) {
     // Check the required field.
     const email = data.query.email.trim() || false;
-    if (!email) {
-        callback(404, {message: 'The user does not exists'});
-    } else {
-        // Lookup the Users data.
-        _data.read('users',email, (err) => {
-            if (err) callback(400, {Error: 'The User does not exists'});
-            deleteFile('users', email)
-            .then(results => callback(results.statusCode, results.result))
-            .catch(error => callback(error.statusCode, error.result));
-        });
-    }
+    if (!email) callback(404, {message: 'The user does not exists'});
+    // Lookup the Users data.
+    _data.read('users',email, (err) => {
+        if (err) callback(400, {message: 'The User does not exists'});
+        deleteFile('users', email)
+        .then(results => callback(results.statusCode, results.result))
+        .catch(error => callback(error.statusCode, error.result));
+    });
 
 
     // callback(200, {message: `delete method is work!`});
