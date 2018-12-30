@@ -1,6 +1,7 @@
 // Dependencies
 const _data = require('../lib/data');
 const helpers = require('../lib/helpers');
+const utils = require('../lib/utils');
 
 const listMethods = ['post','get','put','delete'];
 
@@ -86,18 +87,23 @@ routes.post = function(data, callback) {
 // Optional field : none
 routes.get = function(data, callback) {
     // Check the required field.
-    const email = data.query.email.trim() || false;
+    const email = data.query.email.trim() || '';
+    const tokenId = data.headers.tokenid || '';
 
     if (!email) callback(400, {message: 'Missing required field'});
+    
+    utils.verifyToken(tokenId, email, isValid => {
+        if (!isValid) callback(403, {message: `Missing required token in headers, or token is invalid`});
+        // Consuming promise
+        readFile('users',email)
+        .then(userData => {
+            // Remove the password fields when returning it to the requester.
+            delete userData.result.password;
+            callback(userData.statusCode, userData.result);
+        })
+        .catch(error => callback(error.statusCode, error.result));
+    });
 
-    // Consuming promise
-    readFile('users',email)
-    .then(results => {
-        // Remove the password fields when returning it to the requester.
-        delete results.result.password;
-        callback(results.statusCode, results.result);
-    })
-    .catch(error => callback(error.statusCode, error.result));
 };
 
 // Users - put
@@ -105,6 +111,7 @@ routes.get = function(data, callback) {
 // Optional field : fullName,phone,streetAddress
 routes.put = function(data, callback) {
     // Get the property with destructuring ES6 syntax.
+    const tokenId = data.headers.tokenid || '';
     let {fullName,email,phone,streetAddress} = data.payload;
     fullName = fullName || '';
     email = email || '';
@@ -114,23 +121,28 @@ routes.put = function(data, callback) {
     // If required field not fullfilled, throw error.
     if (!email) callback(400, {message: 'Missing required field'});
 
-    // If one of optional field not fullfilled, throw error .
-    if (!fullName && !phone && !streetAddress) callback(400, {message: 'Missing required field'});
+    // Check if token is valid, then continue
+    utils.verifyToken(tokenId, email, isValid => {
+        if (!isValid) callback(403, {message: `Missing required token in headers, or token is invalid`});
 
-    // Lookup the user.
-    _data.read('users',email, (err,userData) => {
-        // Update the necessary field.
-        if (err) callback(400, {message: 'The User does not exists'});
-        
-        // Update userData Object.
-        fullName ? userData.fullName = fullName : null;
-        phone ? userData.phone = phone : null;
-        streetAddress ? userData.streetAddress = streetAddress : null;
+        // If one of optional field not fullfilled, throw error .
+        if (!fullName && !phone && !streetAddress) callback(400, {message: 'Missing required field'});
 
-        // Store the new updated data.
-        updateFile('users', email, userData)
-        .then(results => callback(results.statusCode, results.result))
-        .catch(error => callback(error.statusCode, error.result));
+        // Lookup the user.
+        _data.read('users',email, (err,userData) => {
+            // Update the necessary field.
+            if (err) callback(400, {message: 'The User does not exists'});
+            
+            // Update userData Object.
+            fullName ? userData.fullName = fullName : null;
+            phone ? userData.phone = phone : null;
+            streetAddress ? userData.streetAddress = streetAddress : null;
+
+            // Store the new updated data.
+            updateFile('users', email, userData)
+            .then(results => callback(results.statusCode, results.result))
+            .catch(error => callback(error.statusCode, error.result));
+        });
     });
 };
 
@@ -139,14 +151,23 @@ routes.put = function(data, callback) {
 // Optional field : none
 routes.delete = function(data, callback) {
     // Check the required field.
+    const tokenId = data.headers.tokenid || '';
     const email = data.query.email.trim() || false;
     if (!email) callback(404, {message: 'The user does not exists'});
-    // Lookup the Users data.
-    _data.read('users',email, (err) => {
-        if (err) callback(400, {message: 'The User does not exists'});
-        deleteFile('users', email)
-        .then(results => callback(results.statusCode, results.result))
-        .catch(error => callback(error.statusCode, error.result));
+
+    // Check if token is valid, then continue
+    utils.verifyToken(tokenId, email, isValid => {
+        if (!isValid) callback(403, {message: `Missing required token in headers, or token is invalid`});
+        // Lookup the Users data.
+        _data.read('users',email, (err) => {
+            if (err) {
+                callback(400, {message: 'The User does not exists'});
+            } else {
+                deleteFile('users', email)
+                .then(results => callback(results.statusCode, results.result))
+                .catch(error => callback(error.statusCode, error.result));
+            }
+        });
     });
 
 
