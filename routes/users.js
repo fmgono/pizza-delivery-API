@@ -70,8 +70,8 @@ routes.post = function(data, callback) {
     if (!isPassedFields) callback(400, {message: 'Missing required fields.'});
 
     // Check the user does not exists.
-    _data.read('users',email, (err, usersData) => {
-        if (usersData) callback(500, {message: `Email with the address ${email} already registered`});
+    _data.read('users',email, (err, userData) => {
+        if (userData) callback(500, {message: `Email with the address ${email} already registered`});
         // Hash the password.
         const hashedPassword = helpers.hash(password);
         if (!hashedPassword) callback(500, {message: `Could not hash the user's password`});
